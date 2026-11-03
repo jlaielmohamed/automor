@@ -1,102 +1,37 @@
-// Automor landing page: email form
+// Automor landing page: mobile menu + email form
 // Paste your n8n Webhook (Production URL) between the quotes below.
 const WEBHOOK_URL = "";
 
-const btn = document.getElementById("lead-btn");
-const input = document.getElementById("lead-email");
-const msg = document.getElementById("lead-msg");
-const serviceSelect = document.getElementById("service-select");
-const formContainer = document.getElementById("email-form-container");
-const confirmationContainer = document.getElementById("email-confirmation");
-const sendAnotherBtn = document.getElementById("send-another");
+/* ---------- Mobile menu ---------- */
+const navToggle = document.getElementById("nav-toggle");
+const mainNav = document.getElementById("main-nav");
 
-async function sendEmail() {
-  if (!btn || !input || !msg || !serviceSelect) {
-    return;
-  }
-
-  const email = input.value.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    msg.textContent = "Please enter a valid email address.";
-    return;
-  }
-
-  if (!serviceSelect.value) {
-    msg.textContent = "Please select a service.";
-    return;
-  }
-
-  if (!WEBHOOK_URL) {
-    msg.textContent = "The form is not connected yet.";
-    return;
-  }
-
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = "Sending...";
-  msg.textContent = "";
-
-  try {
-    const res = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        service: serviceSelect.value,
-        source: "automor-site",
-        date: new Date().toISOString(),
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Request failed");
-    }
-
-    // Show confirmation page
-    if (formContainer) {
-      formContainer.style.display = "none";
-    }
-    if (confirmationContainer) {
-      confirmationContainer.style.display = "flex";
-    }
-  } catch (err) {
-    msg.textContent = "Something went wrong. Please try again.";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+function setMenu(open) {
+  if (!navToggle || !mainNav) return;
+  mainNav.classList.toggle("is-open", open);
+  navToggle.setAttribute("aria-expanded", String(open));
+  navToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
 }
 
-if (btn) {
-  btn.addEventListener("click", sendEmail);
-}
-
-if (input) {
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      sendEmail();
-    }
+if (navToggle && mainNav) {
+  navToggle.addEventListener("click", () => {
+    setMenu(navToggle.getAttribute("aria-expanded") !== "true");
   });
-}
 
-if (sendAnotherBtn) {
-  sendAnotherBtn.addEventListener("click", () => {
-    if (confirmationContainer) {
-      confirmationContainer.style.display = "none";
-    }
-    if (formContainer) {
-      formContainer.style.display = "flex";
-    }
-    if (input) {
-      input.value = "";
-      input.focus();
-    }
-    if (msg) {
-      msg.textContent = "";
-    }
-    if (serviceSelect) {
-      serviceSelect.selectedIndex = 0;
-    }
+  // Close the menu after tapping a link
+  mainNav.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => setMenu(false));
   });
-}
+
+  // Close with Escape or when tapping outside
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setMenu(false);
+  });
+  document.addEventListener("click", (e) => {
+    if (!mainNav.contains(e.target) && !navToggle.contains(e.target)) setMenu(false);
+  });
+
+  // Reset when the screen grows back to desktop width
+  window.matchMedia("(min-width: 901px)").addEventListener("change", (e) => {
+    if (e.matches) setMenu(false);
+  });
